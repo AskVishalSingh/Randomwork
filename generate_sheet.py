@@ -209,28 +209,47 @@ def build_transactions_sheet(ws):
         font=Font(color="9C0006")
     ))
 
-    # ── Sample data row ───────────────────────────────────────────────────────
-    sample = [
-        "TXN-0001",
-        datetime.date.today(),
-        "Buy",
-        "ABC Enterprises",
-        "XYZ Traders",
-        "Office Chairs",
-        10,
-        2500,
-        None,          # formula auto-fills
-        "Pending",
-        0,
-        None,          # formula auto-fills
-        datetime.date.today() + datetime.timedelta(days=30),
-        "Pending",
-        datetime.date.today() + datetime.timedelta(days=15),
-        "First order — verify quality before full payment",
+    # ── Sample data ────────────────────────────────────────────────────────────
+    today = datetime.date.today()
+    d = lambda days: today + datetime.timedelta(days=days)
+
+    # Columns: TxnID, Date, Type, Buyer, Seller, Product, Qty, UnitPrice,
+    #          [Total-skip], PayStatus, PaidAmt, [BalDue-skip],
+    #          DueDate, DelStatus, ExpDelivery, Notes
+    samples = [
+        ("TXN-0001", d(-45), "Buy",  "ABC Enterprises",      "XYZ Traders",          "Office Chairs",         10, 2500,   "Paid",    25000, d(-15), "Delivered", d(-30), "Bulk order for new office wing"),
+        ("TXN-0002", d(-30), "Sell", "Sunrise Retail Co.",   "ABC Enterprises",      "LED Strip Lights",      50,  350,   "Paid",    17500, d(-10), "Delivered", d(-20), "Monthly supply contract"),
+        ("TXN-0003", d(-20), "Buy",  "ABC Enterprises",      "Metro Supplies Ltd.",  "A4 Paper (Box)",       100,  480,   "Paid",    48000, d(-5),  "Delivered", d(-12), "Stationery restock Q1"),
+        ("TXN-0004", d(-18), "Sell", "Greenleaf Corp.",      "ABC Enterprises",      "Laptop Bags",           30,  750,   "Paid",    22500, d(-8),  "Delivered", d(-15), "Corporate gift order"),
+        ("TXN-0005", d(-15), "Buy",  "ABC Enterprises",      "TechZone Pvt. Ltd.",   "USB-C Hubs",            20, 1200,   "Pending",     0, d(15),  "Pending",   d(10),  "Awaiting delivery confirmation"),
+        ("TXN-0006", d(-12), "Sell", "BlueStar Industries",  "ABC Enterprises",      "Printer Cartridges",    60,  320,   "Pending",     0, d(18),  "Delivered", d(-5),  "Invoice sent; awaiting payment"),
+        ("TXN-0007", d(-10), "Buy",  "ABC Enterprises",      "Global Furniture Co.", "Standing Desks",         8, 8500,   "Pending", 34000, d(20),  "Pending",   d(25),  "Partial advance paid; balance on delivery"),
+        ("TXN-0008", d(-8),  "Sell", "Horizon Traders",      "ABC Enterprises",      "Wireless Keyboards",    25,  950,   "Pending",     0, d(12),  "Pending",   d(8),   "Order confirmed; production in progress"),
+        ("TXN-0009", d(-35), "Buy",  "ABC Enterprises",      "Speedy Logistics",     "Packaging Material",   200,  150,   "Due",         0, d(-10), "Delivered", d(-28), "Payment overdue — follow up with accounts"),
+        ("TXN-0010", d(-25), "Sell", "Redwood Distributors", "ABC Enterprises",      "Steel Shelving Units",  15, 3200,   "Due",     16000, d(-5),  "Delivered", d(-18), "Partial payment received; balance due"),
+        ("TXN-0011", d(-22), "Buy",  "ABC Enterprises",      "Alpha Electronics",    "HDMI Cables (pack)",    80,  220,   "Due",         0, d(-2),  "Delivered", d(-20), "Urgent: payment deadline crossed"),
+        ("TXN-0012", d(-5),  "Sell", "Pinnacle Group",       "ABC Enterprises",      "Office Sofas",           5, 12000,  "Pending",     0, d(30),  "Pending",   d(45),  "Custom order; 45-day delivery window"),
+        ("TXN-0013", d(-3),  "Buy",  "ABC Enterprises",      "SwiftPrint Solutions", "Business Cards (500)",   4,  800,   "Paid",     3200, d(0),   "Pending",   d(5),   "Branding refresh batch"),
+        ("TXN-0014", d(-2),  "Sell", "Nexus Retail Ltd.",    "ABC Enterprises",      "Extension Cords",      100,  180,   "Pending",     0, d(21),  "Pending",   d(14),  "New client — net-30 payment terms"),
+        ("TXN-0015", d(-1),  "Buy",  "ABC Enterprises",      "CloudServe India",     "Annual SaaS License",    1, 85000,  "Paid",    85000, d(0),   "Delivered", d(-1),  "Annual ERP renewal — auto-renews next year"),
+        ("TXN-0016", d(0),   "Sell", "Eastgate Wholesalers", "ABC Enterprises",      "Projector Screens",     10, 4500,   "Pending",     0, d(15),  "Pending",   d(20),  "New bulk deal — first transaction"),
     ]
-    for col_idx, val in enumerate(sample, start=1):
-        if val is not None and not (col_idx in (9, 12)):  # skip formula cols
-            ws.cell(row=2, column=col_idx).value = val
+
+    SKIP_COLS = {9, 12}   # Total Amount and Balance Due are formulas
+    for data_row_idx, row_data in enumerate(samples, start=2):
+        (txn_id, date, txn_type, buyer, seller, product,
+         qty, unit_price, pay_status, paid_amt,
+         due_date, del_status, exp_delivery, notes) = row_data
+
+        values = [txn_id, date, txn_type, buyer, seller, product,
+                  qty, unit_price, None,        # col 9 = formula
+                  pay_status, paid_amt, None,   # col 12 = formula
+                  due_date, del_status, exp_delivery, notes]
+
+        for col_idx, val in enumerate(values, start=1):
+            if col_idx in SKIP_COLS:
+                continue
+            ws.cell(row=data_row_idx, column=col_idx).value = val
 
 
 # ══════════════════════════════════════════════════════════════════════════════
