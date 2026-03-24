@@ -1,0 +1,51 @@
+name: CI — Lint & Generate Sheet
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint-and-generate:
+    name: Lint Python & Generate Excel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install openpyxl flake8
+
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are syntax errors or undefined names
+          flake8 generate_sheet.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Warn on style issues (non-blocking)
+          flake8 generate_sheet.py --count --exit-zero --max-line-length=120 --statistics
+
+      - name: Generate Excel sheet
+        run: python generate_sheet.py
+
+      - name: Verify output file exists
+        run: |
+          if [ ! -f TransactionManagement.xlsx ]; then
+            echo "ERROR: TransactionManagement.xlsx was not generated!"
+            exit 1
+          fi
+          echo "SUCCESS: TransactionManagement.xlsx generated ($(du -h TransactionManagement.xlsx | cut -f1))"
+
+      - name: Upload generated sheet as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TransactionManagement-${{ github.sha }}
+          path: TransactionManagement.xlsx
+          retention-days: 30
